@@ -28,12 +28,15 @@ library
   other-modules:       Data.Digest.XXHash.FFI.C.State
   build-depends:       base >= 4.7 && < 5
                      , bytestring
-  ghc-options:         -Wall
+  ghc-options:         -Wall -pgmPcpphs -optP--cpp
   default-language:    Haskell2010
   c-sources:           src-c/xxhash.c
   install-includes:    src-c/xxhash.h
   include-dirs:        src-c
   includes:            xxhash.h
+  cc-options:          -DXXH_NAMESPACE=HASKELL_FFI_
+  cpp-options:         -DXXH_NAMESPACE=HASKELL_FFI_
+  build-tools:         cpphs, hsc2hs
 
 test-suite xxhash-ffi-test
   type:                exitcode-stdio-1.0

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE UnliftedFFITypes #-}
 -- |
@@ -48,54 +49,71 @@ import Data.Digest.XXHash.FFI.C.State
 import Foreign.C.Types
 import Foreign.Ptr       (Ptr)
 
-foreign import ccall unsafe "XXH64" c_xxh64 ::
+#define XXH_FFI_STRINGIZE(s) #s
+-- Use two levels of macros to force macro expansion before stringization
+-- See: https://gcc.gnu.org/onlinedocs/cpp/Argument-Prescan.html
+#define XXH_FFI_CONCAT(a,b) XXH_FFI_CONCAT_(a,b)
+#define XXH_FFI_CONCAT_(a,b) XXH_FFI_STRINGIZE(a##b)
+
+-- The following macro create an foreign import statement in which XXH_NAMESPACE
+-- is prepended to every symbol name.
+#define XXH_FFI_IMPORT_UNSAFE(cc,hs) \
+  foreign import ccall unsafe XXH_FFI_CONCAT(XXH_NAMESPACE,cc) hs
+
+-- XXH_NAMESPACE must be defined, but can be empty. Otherwise XXH_NAMESPACE
+-- would be prepended literally instead of its contents.
+#if !defined(XXH_NAMESPACE)
+# error XXH_NAMESPACE needs to be defined
+#endif
+
+XXH_FFI_IMPORT_UNSAFE(XXH64,c_xxh64) ::
     Ptr a      -- ^ 'Ptr' to the input buffer
  -> CSize      -- ^ Buffer length
  -> CULLong    -- ^ Seed
  -> IO CULLong -- ^ Resulting hash
 
-foreign import ccall unsafe "XXH32" c_xxh32 ::
+XXH_FFI_IMPORT_UNSAFE(XXH32,c_xxh32) ::
     Ptr a      -- ^ 'Ptr' to the input buffer
  -> CSize      -- ^ Buffer length
  -> CUInt      -- ^ Seed
  -> IO CUInt   -- ^ Resulting hash
 
-foreign import ccall unsafe "XXH32_copyState" c_xxh32_copyState ::
+XXH_FFI_IMPORT_UNSAFE(XXH32_copyState,c_xxh32_copyState) ::
     XXH32State     -- ^ Destination
  -> XXH32State     -- ^ Source
  -> IO ()
 
-foreign import ccall unsafe "XXH32_reset" c_xxh32_reset ::
+XXH_FFI_IMPORT_UNSAFE(XXH32_reset,c_xxh32_reset) ::
     XXH32State     -- ^ The state to reset
  -> CUInt          -- ^ The initial seed
  -> IO ()
 
-foreign import ccall unsafe "XXH32_update" c_xxh32_update ::
+XXH_FFI_IMPORT_UNSAFE(XXH32_update,c_xxh32_update) ::
     XXH32State     -- ^ The state to update
  -> Ptr a          -- ^ 'Ptr' to the input buffer
  -> CSize          -- ^ Buffer length
  -> IO ()
 
-foreign import ccall unsafe "XXH32_digest" c_xxh32_digest ::
+XXH_FFI_IMPORT_UNSAFE(XXH32_digest,c_xxh32_digest) ::
     XXH32State     -- ^ The state to digest
  -> IO CUInt       -- ^ Resulting hash
 
-foreign import ccall unsafe "XXH64_copyState" c_xxh64_copyState ::
+XXH_FFI_IMPORT_UNSAFE(XXH64_copyState,c_xxh64_copyState) ::
     XXH64State     -- ^ Destination
  -> XXH64State     -- ^ Source
  -> IO ()
 
-foreign import ccall unsafe "XXH64_reset" c_xxh64_reset ::
+XXH_FFI_IMPORT_UNSAFE(XXH64_reset,c_xxh64_reset) ::
     XXH64State     -- ^ The state to reset
  -> CULLong        -- ^ The initial seed
  -> IO ()
 
-foreign import ccall unsafe "XXH64_update" c_xxh64_update ::
+XXH_FFI_IMPORT_UNSAFE(XXH64_update,c_xxh64_update) ::
     XXH64State     -- ^ The state to update
  -> Ptr a          -- ^ 'Ptr' to the input buffer
  -> CSize          -- ^ Buffer length
  -> IO ()
 
-foreign import ccall unsafe "XXH64_digest" c_xxh64_digest ::
+XXH_FFI_IMPORT_UNSAFE(XXH64_digest,c_xxh64_digest) ::
     XXH64State     -- ^ The state to digest
  -> IO CULLong     -- ^ Resulting hash
