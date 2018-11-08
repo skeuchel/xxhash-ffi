@@ -1,7 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-# LANGUAGE MagicHash                #-}
-{-# LANGUAGE UnboxedTuples            #-}
-{-# LANGUAGE UnliftedFFITypes         #-}
+{-# LANGUAGE UnliftedFFITypes #-}
 -- |
 -- Module:      Data.Digest.XXHash.FFI.C
 -- Copyright:   (c) 2017 Henri Verroken
@@ -46,16 +44,9 @@ module Data.Digest.XXHash.FFI.C (
 , c_xxh64_digest
 ) where
 
--- Define XXH_STATIC_LINKING_ONLY to expose the definition of the state structs.
--- We can then get the size of them and allocate them on the managed GHC heap.
-#define XXH_STATIC_LINKING_ONLY
-#include "xxhash.h"
-
+import Data.Digest.XXHash.FFI.C.State
 import Foreign.C.Types
 import Foreign.Ptr       (Ptr)
-import GHC.Exts          (Int(..), RealWorld,
-                          MutableByteArray##, newByteArray##)
-import GHC.IO            (IO(IO))
 
 foreign import ccall unsafe "XXH64" c_xxh64 ::
     Ptr a      -- ^ 'Ptr' to the input buffer
@@ -68,9 +59,6 @@ foreign import ccall unsafe "XXH32" c_xxh32 ::
  -> CSize      -- ^ Buffer length
  -> CUInt      -- ^ Seed
  -> IO CUInt   -- ^ Resulting hash
-
--- | Intermediate state for computing a XXH32 using segmentation or streams.
-type XXH32State = MutableByteArray## RealWorld
 
 foreign import ccall unsafe "XXH32_copyState" c_xxh32_copyState ::
     XXH32State     -- ^ Destination
@@ -92,9 +80,6 @@ foreign import ccall unsafe "XXH32_digest" c_xxh32_digest ::
     XXH32State     -- ^ The state to digest
  -> IO CUInt       -- ^ Resulting hash
 
--- | Intermediate state for computing a XXH64 using segmentation or streams.
-type XXH64State = MutableByteArray## RealWorld
-
 foreign import ccall unsafe "XXH64_copyState" c_xxh64_copyState ::
     XXH64State     -- ^ Destination
  -> XXH64State     -- ^ Source
@@ -114,21 +99,3 @@ foreign import ccall unsafe "XXH64_update" c_xxh64_update ::
 foreign import ccall unsafe "XXH64_digest" c_xxh64_digest ::
     XXH64State     -- ^ The state to digest
  -> IO CULLong     -- ^ Resulting hash
-
-{-# INLINE allocaMutableByteArray #-}
-allocaMutableByteArray :: Int -> (MutableByteArray## RealWorld -> IO b) -> IO b
-allocaMutableByteArray (I## len) f = IO $ \s0 ->
-    case newByteArray## len s0 of { (## s1, mba ##) ->
-    case f mba                 of { IO m -> m s1 }}
-
-{-# INLINE allocaXXH32State #-}
--- | 'allocaXXH32State f' temporarily allocates a 'XXH32State' and passes it
---   to the function 'f'.
-allocaXXH32State :: (XXH32State -> IO a) -> IO a
-allocaXXH32State = allocaMutableByteArray #{size XXH32_state_t}
-
-{-# INLINE allocaXXH64State #-}
--- | 'allocaXXH64State f' temporarily allocates a 'XXH64State' and passes it
---   to the function 'f'.
-allocaXXH64State :: (XXH64State -> IO a) -> IO a
-allocaXXH64State = allocaMutableByteArray #{size XXH64_state_t}

@@ -25,6 +25,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Data.Digest.XXHash.FFI
                        Data.Digest.XXHash.FFI.C
+  other-modules:       Data.Digest.XXHash.FFI.C.State
   build-depends:       base >= 4.7 && < 5
                      , bytestring
   ghc-options:         -Wall
